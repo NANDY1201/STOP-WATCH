@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch - Green & White</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000000;
+            color: #2d5016;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #4a7c59;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #2e7d32;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(76, 175, 80, 0.2);
+            font-weight: bold;
+        }
+
+        .display {
+            background: #ffffff;
+            border: 2px solid #4caf50;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: inset 0 0 20px rgba(76, 175, 80, 0.1);
+        }
+
+        .time {
+            font-size: 4em;
+            font-family: 'Courier New', monospace;
+            color: #1b5e20;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+            letter-spacing: 3px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start {
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .start:hover {
+            background: #388e3c;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .stop {
+            background: #ff7043;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 112, 67, 0.3);
+        }
+
+        .stop:hover {
+            background: #f4511e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 112, 67, 0.4);
+        }
+
+        .reset {
+            background: transparent;
+            color: #4caf50;
+            border: 2px solid #4caf50;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.2);
+        }
+
+        .reset:hover {
+            background: #4caf50;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .laps {
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .lap {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            color: #2d5016;
+            font-family: 'Courier New', monospace;
+        }
+
+        .lap-number {
+            color: #2e7d32;
+            font-weight: bold;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .time {
+                font-size: 2.5em;
+            }
+            
+            .buttons {
+                flex-wrap: wrap;
+            }
+            
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏱️ STOPWATCH</h1>
+        
+        <div class="display">
+            <div class="time" id="timeDisplay">00:00:00</div>
+        </div>
+        
+        <div class="buttons">
+            <button class="start" id="startBtn" onclick="startTimer()">Start</button>
+            <button class="stop" id="stopBtn" onclick="stopTimer()">Stop</button>
+            <button class="reset" onclick="resetTimer()">Reset</button>
+            <button class="reset" onclick="lapTime()">Lap</button>
+        </div>
+        
+        <div class="laps" id="lapsContainer"></div>
+    </div>
+
+    <script>
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+        let lapCounter = 1;
+
+        function formatTime(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const ms = Math.floor((milliseconds % 1000) / 10);
+            
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(2, '0')}`;
+        }
+
+        function updateDisplay() {
+            const currentTime = elapsedTime + (isRunning ? Date.now() - startTime : 0);
+            document.getElementById('timeDisplay').textContent = formatTime(currentTime);
+        }
+
+        function startTimer() {
+            if (!isRunning) {
+                startTime = Date.now();
+                isRunning = true;
+                timerInterval = setInterval(updateDisplay, 10);
+                
+                document.getElementById('startBtn').textContent = 'Running...';
+                document.getElementById('startBtn').style.background = '#2e7d32';
+            }
+        }
+
+        function stopTimer() {
+            if (isRunning) {
+                elapsedTime += Date.now() - startTime;
+                isRunning = false;
+                clearInterval(timerInterval);
+                
+                document.getElementById('startBtn').textContent = 'Start';
+                document.getElementById('startBtn').style.background = '#4caf50';
+            }
+        }
+
+        function resetTimer() {
+            startTime = 0;
+            elapsedTime = 0;
+            isRunning = false;
+            clearInterval(timerInterval);
+            lapCounter = 1;
+            
+            document.getElementById('timeDisplay').textContent = '00:00:00';
+            document.getElementById('startBtn').textContent = 'Start';
+            document.getElementById('startBtn').style.background = '#4caf50';
+            document.getElementById('lapsContainer').innerHTML = '';
+        }
+
+        function lapTime() {
+            if (isRunning || elapsedTime > 0) {
+                const currentTime = elapsedTime + (isRunning ? Date.now() - startTime : 0);
+                const lapElement = document.createElement('div');
+                lapElement.className = 'lap';
+                lapElement.innerHTML = `
+                    <span class="lap-number">Lap ${lapCounter}</span>
+                    <span>${formatTime(currentTime)}</span>
+                `;
+                document.getElementById('lapsContainer').appendChild(lapElement);
+                lapCounter++;
+            }
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
